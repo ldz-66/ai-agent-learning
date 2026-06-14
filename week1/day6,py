@@ -1,0 +1,46 @@
+# ===== Part 1: 基本类定义 =====
+class Student:
+    def __init__(self, name, age, major):
+        self.name = name
+        self.age = age
+        self.major = major
+        self.scores = {}  # 用来存各科成绩
+
+    def add_score(self, subject, score):
+        self.scores[subject] = score
+
+    def get_average(self):
+        if not self.scores:
+            return 0
+        return sum(self.scores.values()) / len(self.scores)
+
+    def introduce(self):
+        return f"我叫{self.name}，今年{self.age}岁，专业是{self.major}"
+
+
+# 创建对象（实例化）
+s1 = Student("小明", 20, "计算机科学")
+print(s1.introduce())
+
+s1.add_score("数学", 90)
+s1.add_score("英语", 85)
+s1.add_score("Python", 95)
+
+print(f"{s1.name}的平均分: {s1.get_average():.2f}")
+# ===== Part 2: 继承 =====
+class GraduateStudent(Student):
+    def __init__(self, name, age, major, research_direction):
+        # 调用父类的__init__
+        super().__init__(name, age, major)
+        self.research_direction = research_direction
+
+    def introduce(self):
+        # 重写父类方法
+        base_info = super().introduce()
+        return f"{base_info}，研究方向是{self.research_direction}"
+
+
+g1 = GraduateStudent("小红", 23, "人工智能", "大模型应用")
+print(g1.introduce())
+g1.add_score("机器学习", 92)
+print(f"{g1.name}的平均分: {g1.get_average():.2f}")
