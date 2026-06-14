@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>JavaScript基础练习</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        #output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            min-height: 40px;
+        }
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .todo-item.done span {
+            text-decoration: line-through;
+            color: #999;
+        }
+        .delete-btn {
+            background: #dc3545;
+            padding: 4px 8px;
+            font-size: 12px;
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>JavaScript基础练习</h1>
+
+    <!-- 练习1：基本操作 -->
+    <div class="card">
+        <h2>练习1：操作DOM</h2>
+        <p>点击按钮改变下面文字的内容和颜色：</p>
+        <p id="demo-text">这是一段文字</p>
+        <button onclick="changeText()">改变文字</button>
+        <button onclick="changeColor()">改变颜色</button>
+        <button onclick="resetText()">重置</button>
+    </div>
+
+    <!-- 练习2：输入和计算 -->
+    <div class="card">
+        <h2>练习2：获取输入值</h2>
+        <input type="text" id="name-input" placeholder="输入你的名字">
+        <button onclick="greet()">打招呼</button>
+        <div id="greet-output"></div>
+    </div>
+
+    <!-- 练习3：计数器 -->
+    <div class="card">
+        <h2>练习3：计数器</h2>
+        <p>当前计数：<span id="count">0</span></p>
+        <button onclick="changeCount(-1)">-1</button>
+        <button onclick="changeCount(1)">+1</button>
+        <button onclick="resetCount()">重置</button>
+    </div>
+
+    <!-- 练习4：简单Todo -->
+    <div class="card">
+        <h2>练习4：纯前端Todo（数据在内存中）</h2>
+        <input type="text" id="todo-input" placeholder="输入待办内容">
+        <button onclick="addTodo()">添加</button>
+        <div id="todo-list"></div>
+    </div>
+
+    <!-- 练习5：输出区域 -->
+    <div class="card">
+        <h2>练习5：事件监听</h2>
+        <input type="text" id="event-input" placeholder="在这里输入文字">
+        <div id="output">输入内容会实时显示在这里...</div>
+    </div>
+
+    <script>
+        // ===== 练习1：操作DOM =====
+        // document.getElementById 通过id找到页面元素
+        function changeText() {
+            let element = document.getElementById("demo-text");
+            element.textContent = "文字被改变了！时间：" + new Date().toLocaleTimeString();
+        }
+
+        function changeColor() {
+            let element = document.getElementById("demo-text");
+            // 随机颜色
+            let colors = ["#e74c3c", "#2ecc71", "#3498db", "#f39c12", "#9b59b6"];
+            let randomColor = colors[Math.floor(Math.random() * colors.length)];
+            element.style.color = randomColor;
+            element.style.fontWeight = "bold";
+        }
+
+        function resetText() {
+            let element = document.getElementById("demo-text");
+            element.textContent = "这是一段文字";
+            element.style.color = "";
+            element.style.fontWeight = "";
+        }
+
+
+        // ===== 练习2：获取输入值 =====
+        function greet() {
+            // .value 获取输入框的当前值
+            let name = document.getElementById("name-input").value;
+            let output = document.getElementById("greet-output");
+
+            if (!name.trim()) {
+                output.textContent = "请先输入名字！";
+                output.style.color = "red";
+                return; // 提前结束函数
+            }
+
+            output.textContent = `你好，${name}！欢迎来到AI学习之旅 🎉`;
+            output.style.color = "green";
+        }
+
+
+        // ===== 练习3：计数器 =====
+        let count = 0; // 用变量存储状态
+
+        function changeCount(delta) {
+            count += delta;
+            // 更新页面显示
+            document.getElementById("count").textContent = count;
+        }
+
+        function resetCount() {
+            count = 0;
+            document.getElementById("count").textContent = 0;
+        }
+
+
+        // ===== 练习4：纯前端Todo =====
+        let todos = []; // 用数组存储待办事项
+
+        function addTodo() {
+            let input = document.getElementById("todo-input");
+            let content = input.value.trim();
+
+            if (!content) {
+                alert("请输入待办内容！");
+                return;
+            }
+
+            // 添加到数组
+            todos.push({ id: Date.now(), content: content, done: false });
+            input.value = ""; // 清空输入框
+            renderTodos(); // 重新渲染列表
+        }
+
+        function toggleTodo(id) {
+            // 找到对应的todo并切换完成状态
+            let todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.done = !todo.done;
+                renderTodos();
+            }
+        }
+
+        function deleteTodo(id) {
+            // 过滤掉要删除的todo
+            todos = todos.filter(t => t.id !== id);
+            renderTodos();
+        }
+
+        function renderTodos() {
+            let listEl = document.getElementById("todo-list");
+
+            if (todos.length === 0) {
+                listEl.innerHTML = "<p style='color:#999'>暂无待办事项</p>";
+                return;
+            }
+
+            // 用模板字符串生成HTML
+            listEl.innerHTML = todos.map(todo => `
+                <div class="todo-item ${todo.done ? 'done' : ''}">
+                    <input type="checkbox" ${todo.done ? 'checked' : ''}
+                           onchange="toggleTodo(${todo.id})">
+                    <span style="margin-left:8px">${todo.content}</span>
+                    <button class="delete-btn" onclick="deleteTodo(${todo.id})">删除</button>
+                </div>
+            `).join("");
+        }
+
+
+        // ===== 练习5：事件监听 =====
+        // addEventListener 监听事件，比onclick更灵活
+        let eventInput = document.getElementById("event-input");
+        let outputEl = document.getElementById("output");
+
+        // 监听键盘输入事件，实时更新显示
+        eventInput.addEventListener("input", function(event) {
+            let value = event.target.value;
+            if (value) {
+                outputEl.textContent = `你输入了 ${value.length} 个字符：${value}`;
+            } else {
+                outputEl.textContent = "输入内容会实时显示在这里...";
+            }
+        });
+
+        // 监听回车键
+        eventInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                outputEl.style.background = "#d4edda";
+                outputEl.textContent = `你按了回车！内容是：${event.target.value}`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo 应用</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        /* 输入区域 */
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-area input:focus {
+            border-color: #667eea;
+        }
+
+        .btn-add {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+
+        .btn-add:hover { opacity: 0.9; }
+        .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 过滤器 */
+        .filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .filter-btn {
+            padding: 6px 14px;
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            border-color: #667eea;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        /* 搜索框 */
+        .search-box {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            outline: none;
+        }
+
+        .search-box:focus { border-color: #667eea; }
+
+        /* 统计 */
+        .stats {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        /* Todo列表 */
+        .todo-list { min-height: 100px; }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            gap: 12px;
+            animation: slideIn 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .todo-item:last-child { border-bottom: none; }
+
+        .todo-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .todo-content {
+            flex: 1;
+            font-size: 15px;
+            color: #333;
+            transition: all 0.2s;
+        }
+
+        .todo-content.done {
+            text-decoration: line-through;
+            color: #aaa;
+        }
+
+        .todo-date {
+            font-size: 11px;
+            color: #bbb;
+        }
+
+        .btn-delete {
+            padding: 4px 10px;
+            background: none;
+            border: 1px solid #ffcdd2;
+            border-radius: 6px;
+            color: #e57373;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            background: #ffebee;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: #bbb;
+        }
+
+        /* 加载状态 */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+
+        /* 提示消息 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Todo 应用</h1>
+
+        <div class="card">
+            <!-- 输入区域 -->
+            <div class="input-area">
+                <input type="text" id="todo-input" placeholder="添加新的待办事项..." maxlength="200">
+                <button class="btn-add" id="add-btn" onclick="addTodo()">添加</button>
+            </div>
+
+            <!-- 搜索 -->
+            <input type="text" class="search-box" id="search-input" placeholder="🔍 搜索待办事项...">
+
+            <!-- 过滤器 -->
+            <div class="filters">
+                <button class="filter-btn active" onclick="setFilter('all', this)">全部</button>
+                <button class="filter-btn" onclick="setFilter('active', this)">未完成</button>
+                <button class="filter-btn" onclick="setFilter('done', this)">已完成</button>
+            </div>
+
+            <!-- 统计 -->
+            <div class="stats" id="stats">加载中...</div>
+
+            <!-- Todo列表 -->
+            <div class="todo-list" id="todo-list">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示消息 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const BASE_URL = "http://127.0.0.1:8000";
+        let currentFilter = "all";
+        let searchTimer = null;
+
+        // ===== 显示提示消息 =====
+        function showToast(message) {
+            let toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.classList.add("show");
+            setTimeout(() => toast.classList.remove("show"), 2000);
+        }
+
+        // ===== 加载Todo列表 =====
+        async function loadTodos() {
+            let params = new URLSearchParams();
+            let keyword = document.getElementById("search-input").value.trim();
+            if (keyword) params.append("keyword", keyword);
+            if (currentFilter === "done") params.append("done", "true");
+            if (currentFilter === "active") params.append("done", "false");
+
+            try {
+                let response = await fetch(`${BASE_URL}/todos?${params}`);
+                let data = await response.json();
+                renderTodos(data.items, data.total);
+            } catch (error) {
+                document.getElementById("todo-list").innerHTML =
+                    `<div class="empty-state">⚠️ 无法连接到后端服务器<br><small>请确认已启动：uvicorn todo_api:app --reload</small></div>`;
+                document.getElementById("stats").textContent = "连接失败";
+            }
+        }
+
+        // ===== 渲染Todo列表 =====
+        function renderTodos(items, total) {
+            let listEl = document.getElementById("todo-list");
+            let statsEl = document.getElementById("stats");
+
+            // 更新统计
+            let doneCount = items.filter(t => t.done).length;
+            statsEl.textContent = `共 ${total} 条，已完成 ${doneCount} 条，未完成 ${total - doneCount} 条`;
+
+            if (items.length === 0) {
+                listEl.innerHTML = `<div class="empty-state">🎉 没有待办事项</div>`;
+                return;
+            }
+
+            listEl.innerHTML = items.map(todo => `
+                <div class="todo-item" id="todo-${todo.id}">
+                    <input type="checkbox" class="todo-checkbox"
+                           ${todo.done ? 'checked' : ''}
+                           onchange="toggleTodo(${todo.id}, this.checked)">
+                    <div style="flex:1">
+                        <div class="todo-content ${todo.done ? 'done' : ''}">${escapeHtml(todo.content)}</div>
+                        <div class="todo-date">${todo.created_at}</div>
+                    </div>
+                    <button class="btn-delete" onclick="deleteTodo(${todo.id})">删除</button>
+                </div>
+            `).join("");
+        }
+
+        // ===== 添加Todo =====
+        async function addTodo() {
+            let input = document.getElementById("todo-input");
+            let btn = document.getElementById("add-btn");
+            let content = input.value.trim();
+
+            if (!content) {
+                showToast("请输入待办内容！");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "添加中...";
+
+            try {
+                let response = await fetch(`${BASE_URL}/todos`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ content })
+                });
+
+                if (response.ok) {
+                    input.value = "";
+                    showToast("添加成功！");
+                    loadTodos();
+                } else {
+                    let data = await response.json();
+                    showToast(`添加失败：${data.detail}`);
+                }
+            } catch (error) {
+                showToast("网络错误，请检查后端服务器");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "添加";
+            }
+        }
+
+        // ===== 切换完成状态 =====
+        async function toggleTodo(id, done) {
+            try {
+                let response = await fetch(`${BASE_URL}/todos/${id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ done })
+                });
+
+                if (response.ok) {
+                    showToast(done ? "已标记完成！" : "已取消完成");
+                    loadTodos();
+                }
+            } catch (error) {
+                showToast("操作失败，请重试");
+                loadTodos(); // 重新加载恢复状态
+            }
+        }
+
+        // ===== 删除Todo =====
+        async function deleteTodo(id) {
+            if (!confirm("确定要删除这条待办吗？")) return;
+
+            try {
+                let response = await fetch(`${BASE_URL}/todos/${id}`, {
+                    method: "DELETE"
+                });
+
+                if (response.ok) {
+                    showToast("已删除！");
+                    loadTodos();
+                }
+            } catch (error) {
+                showToast("删除失败，请重试");
+            }
+        }
+
+        // ===== 设置过滤器 =====
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            // 更新按钮样式
+            document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            loadTodos();
+        }
+
+        // ===== 防XSS：转义HTML特殊字符 =====
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        // ===== 搜索（防抖：输入停止500ms后才发请求） =====
+        document.getElementById("search-input").addEventListener("input", function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(loadTodos, 500);
+        });
+
+        // ===== 回车添加 =====
+        document.getElementById("todo-input").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") addTodo();
+        });
+
+        // ===== 页面加载时获取数据 =====
+        loadTodos();
+    </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import sqlite3
@@ -32,6 +33,14 @@ def init_db():
 
 # ===== FastAPI应用 =====
 app = FastAPI(title="Todo API", description="一个有数据库的待办事项API")
+# 配置CORS，允许前端页面访问
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],       # 允许所有来源（开发阶段用*，生产环境要改成具体域名）
+    allow_credentials=True,
+    allow_methods=["*"],       # 允许所有HTTP方法
+    allow_headers=["*"],       # 允许所有请求头
+)
 # 全局处理参数校验错误（比如传了错误类型的参数）
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

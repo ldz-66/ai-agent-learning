@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Fetch API练习</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 250px;
+        }
+        .result-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            min-height: 40px;
+            white-space: pre-wrap; /* 保留换行 */
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+    </style>
+</head>
+<body>
+    <h1>Fetch API练习</h1>
+    <p>⚠️ 运行前确保Week3的后端服务器已启动（http://127.0.0.1:8000）</p>
+
+    <!-- 练习1：GET请求 -->
+    <div class="card">
+        <h2>练习1：GET请求——获取所有待办</h2>
+        <button onclick="fetchTodos()">获取所有待办</button>
+        <div class="result-box" id="result1">点击按钮查看结果...</div>
+    </div>
+
+    <!-- 练习2：POST请求 -->
+    <div class="card">
+        <h2>练习2：POST请求——新增待办</h2>
+        <input type="text" id="new-todo" placeholder="输入待办内容">
+        <button onclick="createTodo()">新增</button>
+        <div class="result-box" id="result2">新增结果会显示在这里...</div>
+    </div>
+
+    <!-- 练习3：带加载状态的请求 -->
+    <div class="card">
+        <h2>练习3：加载状态处理</h2>
+        <button id="load-btn" onclick="fetchWithLoading()">获取数据（带加载提示）</button>
+        <div class="result-box" id="result3">点击查看...</div>
+    </div>
+
+    <!-- 练习4：错误处理 -->
+    <div class="card">
+        <h2>练习4：错误处理——查询不存在的id</h2>
+        <button onclick="fetchNonExistent()">查询id=99999的待办</button>
+        <div class="result-box" id="result4">点击查看错误处理效果...</div>
+    </div>
+
+    <script>
+        const BASE_URL = "http://127.0.0.1:8000";
+
+        // ===== 练习1：基本GET请求 =====
+        async function fetchTodos() {
+            // async/await是处理异步操作的语法
+            // fetch是浏览器内置的HTTP请求函数
+            try {
+                const response = await fetch(`${BASE_URL}/todos`);
+                const data = await response.json(); // 把响应体解析成JSON
+
+                let resultEl = document.getElementById("result1");
+
+                if (data.items && data.items.length === 0) {
+                    resultEl.textContent = "暂无待办事项（可以先用练习2新增几条）";
+                    return;
+                }
+
+                // 格式化显示
+                resultEl.textContent = JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                // catch捕获网络错误（比如服务器没启动）
+                document.getElementById("result1").innerHTML =
+                    `<span class="error">请求失败：${error.message}\n请确认后端服务器已启动！</span>`;
+            }
+        }
+
+
+        // ===== 练习2：POST请求 =====
+        async function createTodo() {
+            let content = document.getElementById("new-todo").value.trim();
+            let resultEl = document.getElementById("result2");
+
+            if (!content) {
+                resultEl.innerHTML = `<span class="error">请先输入待办内容！</span>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/todos`, {
+                    method: "POST",                          // 指定请求方法
+                    headers: {
+                        "Content-Type": "application/json"  // 告诉服务器我发的是JSON
+                    },
+                    body: JSON.stringify({ content: content }) // 把JS对象转成JSON字符串
+                });
+
+                const data = await response.json();
+
+                if (response.ok) { // response.ok 表示状态码是2xx
+                    resultEl.innerHTML = `<span class="success">新增成功！</span>\n${JSON.stringify(data, null, 2)}`;
+                    document.getElementById("new-todo").value = ""; // 清空输入框
+                } else {
+                    resultEl.innerHTML = `<span class="error">新增失败：${data.detail}</span>`;
+                }
+
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">网络错误：${error.message}</span>`;
+            }
+        }
+
+
+        // ===== 练习3：加载状态 =====
+        async function fetchWithLoading() {
+            let btn = document.getElementById("load-btn");
+            let resultEl = document.getElementById("result3");
+
+            // 请求开始：禁用按钮，显示加载提示
+            btn.disabled = true;
+            btn.textContent = "加载中...";
+            resultEl.textContent = "正在请求数据...";
+
+            try {
+                const response = await fetch(`${BASE_URL}/todos`);
+                const data = await response.json();
+                resultEl.innerHTML = `<span class="success">加载成功！</span>\n共 ${data.total} 条数据`;
+
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">加载失败：${error.message}</span>`;
+            } finally {
+                // finally无论成功失败都会执行：恢复按钮状态
+                btn.disabled = false;
+                btn.textContent = "获取数据（带加载提示）";
+            }
+        }
+
+
+        // ===== 练习4：错误处理 =====
+        async function fetchNonExistent() {
+            let resultEl = document.getElementById("result4");
+
+            try {
+                const response = await fetch(`${BASE_URL}/todos/99999`);
+                const data = await response.json();
+
+                if (response.status === 404) {
+                    resultEl.innerHTML = `<span class="error">收到404错误（这是正常的！）\n错误信息：${data.detail}</span>`;
+                } else {
+                    resultEl.textContent = JSON.stringify(data, null, 2);
+                }
+
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">网络错误：${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
