@@ -1,0 +1,21 @@
+# Week1笔记
+- 虚拟环境：python -m venv venv，每次开工前激活
+- Git常用命令：git add . / git commit -m "说明" / git push
+- .gitignore：把不需要上传的文件（venv、.env）排除在外
+
+# Week2笔记
+- HTTP方法：GET查询、POST新增、PUT更新、DELETE删除
+- 状态码：200成功、201创建成功、400参数错误、404找不到、500服务器错误
+- FastAPI路径参数：@app.get("/users/{user_id}")
+- FastAPI查询参数：函数参数里有默认值的就是查询参数
+
+# Week3笔记
+- SQLite：轻量数据库，存在.db文件里，Python内置支持
+- conn.row_factory = sqlite3.Row 让结果能用列名访问
+- FastAPI + 数据库：启动时初始化表（@app.on_event("startup")）
+
+# Week5笔记
+- DeepSeek API：用openai库调用，base_url设为https://api.deepseek.com
+- System Prompt：在messages列表中role=system的消息
+- 流式输出：stream=True参数，逐字输出
+- temperature=0：结果固定，适合JSON提取；temperature=1：创意写作
