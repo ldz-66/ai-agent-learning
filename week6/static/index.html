@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI文案助手</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+
+        /* 顶部导航 */
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header h1 { font-size: 1.3rem; }
+        .header p { font-size: 0.85rem; opacity: 0.85; }
+
+        /* 主体布局 */
+        .main {
+            max-width: 1100px;
+            margin: 24px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main { grid-template-columns: 1fr; }
+        }
+
+        /* 卡片 */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        /* 表单元素 */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* 平台选择按钮组 */
+        .platform-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .platform-btn {
+            padding: 7px 14px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .platform-btn:hover { border-color: #667eea; color: #667eea; }
+
+        .platform-btn.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: transparent;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* 字数滑块 */
+        input[type="range"] {
+            width: 100%;
+            accent-color: #667eea;
+        }
+
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* 生成按钮 */
+        .btn-generate {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn-generate:hover { opacity: 0.9; }
+        .btn-generate:active { transform: scale(0.99); }
+        .btn-generate:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 输出区域 */
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .output-header h2 { border: none; margin: 0; padding: 0; }
+
+        .btn-copy {
+            padding: 6px 14px;
+            border: 1.5px solid #667eea;
+            border-radius: 6px;
+            background: white;
+            color: #667eea;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-copy:hover { background: #667eea; color: white; }
+        .btn-copy:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* 输出文本区 */
+        .output-box {
+            min-height: 300px;
+            padding: 16px;
+            background: #fafafa;
+            border: 1.5px solid #f0f0f0;
+            border-radius: 8px;
+            font-size: 15px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            color: #333;
+            position: relative;
+        }
+
+        .output-placeholder {
+            color: #bbb;
+            font-style: italic;
+        }
+
+        /* 打字光标动画 */
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: #667eea;
+            margin-left: 2px;
+            animation: blink 0.8s infinite;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* 状态提示 */
+        .status {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #888;
+            min-height: 20px;
+        }
+
+        .status.generating { color: #667eea; }
+        .status.done { color: #27ae60; }
+        .status.error { color: #e74c3c; }
+
+        /* 字符计数 */
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: #bbb;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>✍️ AI文案助手</h1>
+            <p>输入主题，一键生成多平台文案</p>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- 左侧：输入区 -->
+        <div class="card">
+            <h2>📝 输入内容</h2>
+
+            <div class="form-group">
+                <label class="required">主题 / 产品名</label>
+                <input type="text" id="topic" placeholder="例如：一款保温杯，主打72小时保温" maxlength="100">
+            </div>
+
+            <div class="form-group">
+                <label class="required">目标平台</label>
+                <div class="platform-group" id="platform-group">
+                    <!-- 由JS动态生成 -->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>补充要求（选填）</label>
+                <textarea id="requirements" placeholder="例如：强调冬天户外场景，目标用户是年轻女性..." maxlength="200"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>字数限制：<span id="length-value">300</span> 字</label>
+                <input type="range" id="max-length" min="50" max="500" value="300" step="50"
+                       oninput="document.getElementById('length-value').textContent = this.value">
+                <div class="range-labels">
+                    <span>50字</span>
+                    <span>500字</span>
+                </div>
+            </div>
+
+            <button class="btn-generate" id="generate-btn" onclick="generate()">
+                🚀 生成文案
+            </button>
+            <button class="btn-generate" id="stop-btn"
+                    onclick="stopGenerate()"
+                    style="margin-top:8px; background: #e74c3c; display:none">
+                ⏹ 停止生成
+            </button>
+        </div>
+
+        <!-- 右侧：输出区 -->
+        <div class="card">
+            <div class="output-header">
+                <h2>✨ 生成结果</h2>
+                <button class="btn-copy" id="copy-btn" onclick="copyResult()" disabled>📋 复制</button>
+            </div>
+
+            <div class="output-box" id="output">
+                <span class="output-placeholder">点击"生成文案"后，内容会在这里逐字显示...</span>
+            </div>
+
+            <div class="char-count" id="char-count"></div>
+            <div class="status" id="status"></div>
+
+            <!-- 历史记录模块 -->
+            <div style="margin-top: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-size:13px; font-weight:600; color:#555;">📚 最近生成（本次会话）</span>
+                    <button onclick="clearHistory()"
+                            style="font-size:12px; color:#999; border:none; background:none; cursor:pointer;">
+                        清空
+                    </button>
+                </div>
+                <div id="history-list" style="font-size:13px; color:#888;">
+                    <p style="font-style:italic;">暂无历史记录</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "http://127.0.0.1:8000";
+        let selectedPlatform = "";
+        let generatedText = "";
+        let abortController = null;
+        let isManualStop = false; // 标记是否手动停止
+
+        // ========== 历史记录代码 ==========
+        let history = [];
+
+        function addToHistory(platform, topic, text) {
+            history.unshift({ platform, topic, text, time: new Date().toLocaleTimeString() });
+            if (history.length > 5) history.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const el = document.getElementById("history-list");
+            if (history.length === 0) {
+                el.innerHTML = '<p style="font-style:italic;">暂无历史记录</p>';
+                return;
+            }
+            el.innerHTML = history.map((h, i) => `
+                <div style="padding:8px; border:1px solid #f0f0f0; border-radius:6px; margin-bottom:6px; cursor:pointer;"
+                     onclick="restoreHistory(${i})">
+                    <div style="font-weight:600; color:#555;">${h.platform} · ${h.topic.slice(0,20)}</div>
+                    <div style="color:#999; font-size:12px;">${h.time} · ${h.text.length}字</div>
+                </div>
+            `).join("");
+        }
+
+        function restoreHistory(index) {
+            generatedText = history[index].text;
+            document.getElementById("output").textContent = generatedText;
+            document.getElementById("copy-btn").disabled = false;
+            document.getElementById("status").textContent = "已恢复历史记录";
+            document.getElementById("status").className = "status done";
+        }
+
+        function clearHistory() {
+            history = [];
+            renderHistory();
+        }
+        // ======================================
+
+        async function loadPlatforms() {
+            try {
+                const r = await fetch(`${BASE_URL}/platforms`);
+                const data = await r.json();
+                const group = document.getElementById("platform-group");
+                group.innerHTML = data.platforms.map(p => `
+                    <button class="platform-btn" onclick="selectPlatform('${p}', this)">${p}</button>
+                `).join("");
+            } catch (e) {
+                document.getElementById("status").textContent = "⚠️ 无法连接后端，请确认服务器已启动";
+                document.getElementById("status").className = "status error";
+            }
+        }
+
+        function selectPlatform(platform, btn) {
+            selectedPlatform = platform;
+            document.querySelectorAll(".platform-btn").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+        }
+
+        async function generate() {
+            const topic = document.getElementById("topic").value.trim();
+            const requirements = document.getElementById("requirements").value.trim();
+            const maxLength = document.getElementById("max-length").value;
+            const btn = document.getElementById("generate-btn");
+            const output = document.getElementById("output");
+            const status = document.getElementById("status");
+            const charCount = document.getElementById("char-count");
+
+            if (!topic) {
+                alert("请输入主题！");
+                return;
+            }
+            if (!selectedPlatform) {
+                alert("请选择目标平台！");
+                return;
+            }
+
+            // 重置标记与内容
+            isManualStop = false;
+            generatedText = "";
+            btn.disabled = true;
+            btn.textContent = "⏳ 生成中...";
+            document.getElementById("stop-btn").style.display = "block";
+            document.getElementById("copy-btn").disabled = true;
+            output.innerHTML = '<span class="cursor"></span>';
+            status.textContent = "正在生成...";
+            status.className = "status generating";
+            charCount.textContent = "";
+
+            try {
+                abortController = new AbortController();
+                const response = await fetch(`${BASE_URL}/generate`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        topic,
+                        platform: selectedPlatform,
+                        requirements,
+                        max_length: parseInt(maxLength)
+                    }),
+                    signal: abortController.signal
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                output.innerHTML = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split("\n");
+
+                    for (const line of lines) {
+                        if (!line.startsWith("data: ")) continue;
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.text) {
+                                generatedText += data.text;
+                                output.textContent = generatedText;
+                                output.innerHTML += '<span class="cursor"></span>';
+                                charCount.textContent = `已生成 ${generatedText.length} 字`;
+                            } else if (data.done) {
+                                output.textContent = generatedText;
+                                status.textContent = `✅ 生成完成，共 ${generatedText.length} 字`;
+                                status.className = "status done";
+                                document.getElementById("copy-btn").disabled = false;
+                                addToHistory(selectedPlatform, topic, generatedText);
+                            } else if (data.error) {
+                                status.textContent = `❌ 错误：${data.error}`;
+                                status.className = "status error";
+                            }
+                        } catch (e) {}
+                    }
+                }
+            } catch (error) {
+                // 核心修复：区分手动停止和真实网络错误
+                if (error.name === 'AbortError' && isManualStop) {
+                    status.textContent = "已手动终止生成";
+                    status.className = "status";
+                } else {
+                    status.textContent = `❌ 连接失败：${error.message}`;
+                    status.className = "status error";
+                    output.innerHTML = '<span class="output-placeholder">生成失败，请检查后端服务器</span>';
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "🚀 生成文案";
+                document.getElementById("stop-btn").style.display = "none";
+                abortController = null;
+            }
+        }
+
+        function stopGenerate() {
+            if (abortController) {
+                isManualStop = true;
+                abortController.abort();
+                document.getElementById("stop-btn").style.display = "none";
+                document.getElementById("generate-btn").disabled = false;
+                document.getElementById("generate-btn").textContent = "🚀 生成文案";
+                document.getElementById("status").textContent = "已停止生成";
+                document.getElementById("status").className = "status";
+            }
+        }
+
+        function copyResult() {
+            if (!generatedText) return;
+            navigator.clipboard.writeText(generatedText).then(() => {
+                const btn = document.getElementById("copy-btn");
+                btn.textContent = "✅ 已复制";
+                setTimeout(() => btn.textContent = "📋 复制", 2000);
+            });
+        }
+
+        // 页面初始化渲染历史空白提示
+        renderHistory();
+        loadPlatforms();
+    </script>
+</body>
+</html>
