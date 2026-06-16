@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库问答系统</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f7fa;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 1.2rem; }
+        .header-stats { font-size: 13px; opacity: 0.85; }
+
+        .layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 左侧：文档管理 */
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        /* 上传区 */
+        .upload-area {
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .upload-drop {
+            border: 2px dashed #d0d7de;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+            font-size: 13px;
+        }
+        .upload-drop:hover, .upload-drop.dragover {
+            border-color: #1a73e8;
+            background: #f0f7ff;
+            color: #1a73e8;
+        }
+        .upload-drop .icon { font-size: 24px; margin-bottom: 6px; }
+
+        #file-input { display: none; }
+
+        .upload-progress {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #1a73e8;
+            display: none;
+        }
+
+        /* 文档列表 */
+        .doc-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .doc-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            gap: 10px;
+            transition: background 0.1s;
+        }
+        .doc-item:hover { background: #f5f5f5; }
+
+        .doc-icon { font-size: 20px; flex-shrink: 0; }
+        .doc-info { flex: 1; min-width: 0; }
+        .doc-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .doc-meta { font-size: 11px; color: #999; margin-top: 2px; }
+
+        .btn-delete-doc {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #ccc;
+            font-size: 16px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .btn-delete-doc:hover { color: #e74c3c; background: #fff0f0; }
+
+        .doc-empty {
+            text-align: center;
+            color: #bbb;
+            font-size: 13px;
+            padding: 30px 16px;
+        }
+
+        /* 侧边栏底部按钮 */
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .btn-reset {
+            width: 100%;
+            padding: 8px;
+            background: none;
+            border: 1px solid #ffcdd2;
+            border-radius: 6px;
+            color: #e57373;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-reset:hover { background: #ffebee; }
+
+        /* 右侧：问答区 */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 对话历史 */
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-welcome {
+            text-align: center;
+            color: #bbb;
+            padding: 60px 20px;
+        }
+        .chat-welcome .big-icon { font-size: 48px; margin-bottom: 12px; }
+        .chat-welcome p { font-size: 14px; line-height: 2; }
+
+        /* 消息气泡 */
+        .msg { display: flex; gap: 12px; max-width: 800px; }
+        .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .msg.user .msg-avatar { background: #e8f0fe; }
+        .msg.ai .msg-avatar { background: #f0f7ff; }
+
+        .msg-content { max-width: 680px; }
+
+        .msg-bubble {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
+        .msg.user .msg-bubble {
+            background: #1a73e8;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .msg.ai .msg-bubble {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        /* 来源引用 */
+        .msg-sources {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .source-tag {
+            padding: 3px 10px;
+            background: #e8f0fe;
+            color: #1a73e8;
+            border-radius: 12px;
+            font-size: 12px;
+            border: 1px solid #c5d8fb;
+        }
+
+        /* 打字光标 */
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: #1a73e8;
+            margin-left: 1px;
+            animation: blink 0.8s infinite;
+            vertical-align: text-bottom;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* 输入区 */
+        .chat-input-area {
+            padding: 16px 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        #question-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            min-height: 46px;
+            max-height: 120px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        #question-input:focus { border-color: #1a73e8; }
+
+        .btn-send {
+            padding: 12px 20px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-send:hover { background: #1557b0; }
+        .btn-send:disabled { background: #ccc; cursor: not-allowed; }
+
+        .input-hint {
+            font-size: 12px;
+            color: #bbb;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 知识库问答系统</h1>
+        <div class="header-stats" id="header-stats">加载中...</div>
+    </div>
+
+    <div class="layout">
+        <!-- 左侧：文档管理 -->
+        <div class="sidebar">
+            <div class="sidebar-header">📁 知识库文档</div>
+
+            <!-- 上传区 -->
+            <div class="upload-area">
+                <div class="upload-drop" id="upload-drop"
+                     onclick="document.getElementById('file-input').click()"
+                     ondragover="handleDragOver(event)"
+                     ondragleave="handleDragLeave(event)"
+                     ondrop="handleDrop(event)">
+                    <div class="icon">📄</div>
+                    <div>点击上传 / 拖拽文件</div>
+                    <div style="color:#bbb; margin-top:4px">支持 .txt 格式</div>
+                </div>
+                <input type="file" id="file-input" accept=".txt" onchange="uploadFile(this.files[0])">
+                <div class="upload-progress" id="upload-progress">⏳ 正在处理...</div>
+            </div>
+
+            <!-- 文档列表 -->
+            <div class="doc-list" id="doc-list">
+                <div class="doc-empty">还没有文档<br>上传后即可提问</div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="btn-reset" onclick="resetKnowledge()">🗑 清空知识库</button>
+            </div>
+        </div>
+
+        <!-- 右侧：问答区 -->
+        <div class="chat-area">
+            <div class="chat-history" id="chat-history">
+                <div class="chat-welcome">
+                    <div class="big-icon">🤖</div>
+                    <p>上传文档后，我可以帮你回答关于文档内容的问题<br>
+                    我会自动引用相关来源，让回答更可信</p>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="input-row">
+                    <textarea id="question-input"
+                              placeholder="输入问题，按 Enter 发送（Shift+Enter 换行）..."
+                              onkeydown="handleKeydown(event)"></textarea>
+                    <button class="btn-send" id="send-btn" onclick="sendQuestion()">发送</button>
+                </div>
+                <div class="input-hint">💡 提问时尽量具体，效果更好</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "http://127.0.0.1:8000";
+
+        // ===== 初始化 =====
+        async function init() {
+            await loadDocuments();
+            await loadStats();
+        }
+
+        // ===== 加载统计 =====
+        async function loadStats() {
+            try {
+                const r = await fetch(`${BASE_URL}/stats`);
+                const data = await r.json();
+                document.getElementById("header-stats").textContent =
+                    `已有 ${data.total_documents} 份文档 · ${data.total_chunks} 个知识块`;
+            } catch (e) {
+                document.getElementById("header-stats").textContent = "⚠️ 连接失败";
+            }
+        }
+
+        // ===== 加载文档列表 =====
+        async function loadDocuments() {
+            try {
+                const r = await fetch(`${BASE_URL}/documents`);
+                const data = await r.json();
+                renderDocList(data.documents);
+            } catch (e) {
+                console.error("加载文档失败", e);
+            }
+        }
+
+        function renderDocList(docs) {
+            const el = document.getElementById("doc-list");
+            if (!docs || docs.length === 0) {
+                el.innerHTML = '<div class="doc-empty">还没有文档<br>上传后即可提问</div>';
+                return;
+            }
+            el.innerHTML = docs.map(doc => `
+                <div class="doc-item">
+                    <div class="doc-icon">📄</div>
+                    <div class="doc-info">
+                        <div class="doc-name" title="${doc.title}">${doc.title}</div>
+                        <div class="doc-meta">${doc.chunks} 个知识块</div>
+                    </div>
+                    <button class="btn-delete-doc" onclick="deleteDoc('${doc.doc_id}', '${doc.title}')" title="删除">×</button>
+                </div>
+            `).join("");
+        }
+
+        // ===== 上传文件 =====
+        async function uploadFile(file) {
+            if (!file) return;
+            if (!file.name.endsWith(".txt")) {
+                alert("目前只支持 .txt 格式的文件！");
+                return;
+            }
+
+            const progress = document.getElementById("upload-progress");
+            progress.style.display = "block";
+            progress.textContent = `⏳ 正在处理 ${file.name}...`;
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const r = await fetch(`${BASE_URL}/upload`, {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await r.json();
+
+                if (r.ok) {
+                    progress.textContent = `✅ ${file.name} 上传成功，切分为 ${data.chunks} 个知识块`;
+                    await loadDocuments();
+                    await loadStats();
+                } else {
+                    progress.textContent = `❌ 上传失败：${data.detail}`;
+                }
+            } catch (e) {
+                progress.textContent = `❌ 上传失败：${e.message}`;
+            }
+
+            setTimeout(() => progress.style.display = "none", 3000);
+            document.getElementById("file-input").value = "";
+        }
+
+        // ===== 拖拽上传 =====
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById("upload-drop").classList.add("dragover");
+        }
+        function handleDragLeave(e) {
+            document.getElementById("upload-drop").classList.remove("dragover");
+        }
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById("upload-drop").classList.remove("dragover");
+            const file = e.dataTransfer.files[0];
+            if (file) uploadFile(file);
+        }
+
+        // ===== 删除文档 =====
+        async function deleteDoc(docId, title) {
+            if (!confirm(`确定删除文档"${title}"吗？`)) return;
+            try {
+                const r = await fetch(`${BASE_URL}/documents/${docId}`, { method: "DELETE" });
+                if (r.ok) {
+                    await loadDocuments();
+                    await loadStats();
+                }
+            } catch (e) {
+                alert("删除失败：" + e.message);
+            }
+        }
+
+        // ===== 重置知识库 =====
+        async function resetKnowledge() {
+            if (!confirm("确定清空所有知识库文档吗？此操作不可撤销。")) return;
+            try {
+                await fetch(`${BASE_URL}/reset`, { method: "POST" });
+                await loadDocuments();
+                await loadStats();
+            } catch (e) {
+                alert("重置失败：" + e.message);
+            }
+        }
+
+        // ===== 发送问题 =====
+        async function sendQuestion() {
+            const input = document.getElementById("question-input");
+            const question = input.value.trim();
+            if (!question) return;
+
+            const btn = document.getElementById("send-btn");
+            btn.disabled = true;
+            input.value = "";
+
+            // 显示用户消息
+            const history = document.getElementById("chat-history");
+            // 移除欢迎语
+            const welcome = history.querySelector(".chat-welcome");
+            if (welcome) welcome.remove();
+
+            history.innerHTML += `
+                <div class="msg user">
+                    <div class="msg-avatar">👤</div>
+                    <div class="msg-content">
+                        <div class="msg-bubble">${escapeHtml(question)}</div>
+                    </div>
+                </div>
+            `;
+
+            // 创建AI回复气泡
+            const aiMsgId = "ai-msg-" + Date.now();
+            history.innerHTML += `
+                <div class="msg ai" id="${aiMsgId}">
+                    <div class="msg-avatar">🤖</div>
+                    <div class="msg-content">
+                        <div class="msg-bubble" id="${aiMsgId}-bubble">
+                            <span class="cursor"></span>
+                        </div>
+                        <div class="msg-sources" id="${aiMsgId}-sources"></div>
+                    </div>
+                </div>
+            `;
+            history.scrollTop = history.scrollHeight;
+
+            const bubble = document.getElementById(`${aiMsgId}-bubble`);
+            const sourcesEl = document.getElementById(`${aiMsgId}-sources`);
+            let answerText = "";
+
+            try {
+                const response = await fetch(`${BASE_URL}/ask`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ question })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                bubble.innerHTML = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const lines = decoder.decode(value).split("\n");
+                    for (const line of lines) {
+                        if (!line.startsWith("data: ")) continue;
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.sources) {
+                                // 显示来源标签
+                                const uniqueSources = [...new Set(data.sources.map(s => s.source))];
+                                sourcesEl.innerHTML = uniqueSources.map(s =>
+                                    `<span class="source-tag">📄 ${s}</span>`
+                                ).join("");
+                            } else if (data.text) {
+                                answerText += data.text;
+                                bubble.textContent = answerText;
+                                bubble.innerHTML += '<span class="cursor"></span>';
+                                history.scrollTop = history.scrollHeight;
+                            } else if (data.done) {
+                                bubble.textContent = answerText;
+                            }
+                        } catch (e) {}
+                    }
+                }
+            } catch (e) {
+                bubble.textContent = "请求失败：" + e.message;
+            } finally {
+                btn.disabled = false;
+                history.scrollTop = history.scrollHeight;
+            }
+        }
+
+        // ===== 回车发送 =====
+        function handleKeydown(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendQuestion();
+            }
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+        }
+
+        init();
+    </script>
+</body>
+</html>
