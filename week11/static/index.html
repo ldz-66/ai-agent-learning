@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小智 - 个人智能助手</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+            color: white;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header h1 { font-size: 1.1rem; }
+        .header-sub { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+        .header-right { display: flex; gap: 8px; align-items: center; }
+
+        .btn-sm {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+        }
+        .btn-outline:hover { background: rgba(255,255,255,0.1); }
+
+        .layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 左侧：知识库管理 */
+        .sidebar {
+            width: 260px;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-section {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .sidebar-section h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 8px;
+            border: 1.5px dashed #cbd5e0;
+            border-radius: 8px;
+            background: #f7fafc;
+            color: #718096;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .upload-btn:hover { border-color: #667eea; color: #667eea; background: #eef2ff; }
+        #file-input { display: none; }
+
+        .upload-status {
+            font-size: 12px;
+            margin-top: 6px;
+            min-height: 18px;
+            color: #718096;
+        }
+        .upload-status.ok { color: #38a169; }
+        .upload-status.err { color: #e53e3e; }
+
+        .doc-list { flex: 1; overflow-y: auto; padding: 8px; }
+        .doc-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 6px;
+            gap: 8px;
+            font-size: 13px;
+            color: #4a5568;
+        }
+        .doc-item:hover { background: #f7fafc; }
+        .doc-item span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .btn-del {
+            background: none; border: none; cursor: pointer;
+            color: #cbd5e0; font-size: 15px; padding: 2px 4px;
+        }
+        .btn-del:hover { color: #e53e3e; }
+
+        /* 右侧：聊天区 */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .welcome {
+            text-align: center;
+            color: #a0aec0;
+            padding: 40px 20px;
+            line-height: 2;
+        }
+        .welcome .icon { font-size: 40px; margin-bottom: 10px; }
+
+        .msg { display: flex; gap: 10px; max-width: 780px; }
+        .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+
+        .msg-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; flex-shrink: 0;
+        }
+        .msg.user .msg-avatar { background: #ebf4ff; }
+        .msg.ai .msg-avatar { background: #f0fff4; }
+
+        .msg-bubble {
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            max-width: 640px;
+        }
+        .msg.user .msg-bubble {
+            background: #4a5568;
+            color: white;
+            border-bottom-right-radius: 3px;
+        }
+        .msg.ai .msg-bubble {
+            background: white;
+            color: #2d3748;
+            border-bottom-left-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .msg-time {
+            font-size: 11px;
+            color: #a0aec0;
+            margin-top: 4px;
+            text-align: right;
+        }
+        .msg.ai .msg-time { text-align: left; }
+
+        /* 快捷指令 */
+        .quick-cmds {
+            padding: 8px 20px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            border-top: 1px solid #f0f0f0;
+            background: white;
+        }
+        .quick-btn {
+            padding: 5px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            background: white;
+            font-size: 12px;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover { border-color: #667eea; color: #667eea; }
+
+        /* 输入区 */
+        .chat-input-area {
+            padding: 14px 20px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+        }
+        .input-row { display: flex; gap: 10px; }
+        #msg-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            min-height: 44px;
+            max-height: 100px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        #msg-input:focus { border-color: #667eea; }
+
+        .btn-send {
+            padding: 10px 18px;
+            background: #2d3748;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-send:hover { background: #4a5568; }
+        .btn-send:disabled { background: #a0aec0; cursor: not-allowed; }
+
+        .input-hint { font-size: 11px; color: #a0aec0; margin-top: 5px; }
+
+        .typing {
+            display: flex; gap: 4px; align-items: center;
+            padding: 8px 14px;
+            background: white;
+            border-radius: 12px;
+            border-bottom-left-radius: 3px;
+            width: fit-content;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .dot {
+            width: 6px; height: 6px;
+            background: #a0aec0;
+            border-radius: 50%;
+            animation: bounce 1.2s infinite;
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div>🤖</div>
+            <div>
+                <div class="header h1">小智 · 个人智能助手</div>
+                <div class="header-sub">任务管理 + 知识库问答 + 智能对话</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <span id="kb-status" style="font-size:12px; opacity:0.7">知识库加载中...</span>
+            <button class="btn-sm btn-outline" onclick="clearChat()">清空对话</button>
+        </div>
+    </div>
+
+    <div class="layout">
+        <!-- 左侧：知识库 -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h3>📚 知识库文档</h3>
+                <div class="upload-btn" onclick="document.getElementById('file-input').click()">
+                    ＋ 上传文档（.txt）
+                </div>
+                <input type="file" id="file-input" accept=".txt" onchange="uploadDoc(this.files[0])">
+                <div class="upload-status" id="upload-status"></div>
+            </div>
+            <div class="doc-list" id="doc-list">
+                <div style="font-size:13px; color:#a0aec0; padding:10px; text-align:center">
+                    暂无文档
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：聊天 -->
+        <div class="chat-area">
+            <div class="chat-history" id="chat-history">
+                <div class="welcome">
+                    <div class="icon">🤖</div>
+                    <p>你好！我是小智，你的个人智能助手</p>
+                    <p>我可以帮你管理任务、回答知识库问题、还有普通聊天</p>
+                    <p>试试下面的快捷指令，或者直接跟我说话吧～</p>
+                </div>
+            </div>
+
+            <!-- 快捷指令 -->
+            <div class="quick-cmds">
+                <button class="quick-btn" onclick="quickSend('查看所有任务')">📋 查看任务</button>
+                <button class="quick-btn" onclick="quickSend('添加一个任务：')">➕ 添加任务</button>
+                <button class="quick-btn" onclick="quickSend('任务统计')">📊 任务统计</button>
+                <button class="quick-btn" onclick="quickSend('查看未完成的任务')">⏳ 未完成</button>
+                <button class="quick-btn" onclick="quickSend('知识库里有什么内容？')">📖 知识库</button>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="input-row">
+                    <textarea id="msg-input"
+                              placeholder="跟小智说话... (Enter发送，Shift+Enter换行)"
+                              onkeydown="handleKey(event)"></textarea>
+                    <button class="btn-send" id="send-btn" onclick="sendMsg()">发送</button>
+                </div>
+                <div class="input-hint">💡 可以说：帮我添加任务、查看未完成的、搜索知识库中关于xxx的内容</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE = "http://127.0.0.1:8000";
+
+        function now() {
+            return new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+        }
+
+        function escHtml(t) {
+            return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        }
+
+        function addMsg(role, content) {
+            const history = document.getElementById("chat-history");
+            const welcome = history.querySelector(".welcome");
+            if (welcome) welcome.remove();
+
+            const isUser = role === "user";
+            const div = document.createElement("div");
+            div.className = `msg ${isUser ? "user" : "ai"}`;
+            div.innerHTML = `
+                <div class="msg-avatar">${isUser ? "👤" : "🤖"}</div>
+                <div>
+                    <div class="msg-bubble">${escHtml(content)}</div>
+                    <div class="msg-time">${now()}</div>
+                </div>
+            `;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+            return div;
+        }
+
+        function showTyping() {
+            const history = document.getElementById("chat-history");
+            const div = document.createElement("div");
+            div.className = "msg ai";
+            div.id = "typing-indicator";
+            div.innerHTML = `
+                <div class="msg-avatar">🤖</div>
+                <div class="typing">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            `;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function removeTyping() {
+            const el = document.getElementById("typing-indicator");
+            if (el) el.remove();
+        }
+
+        async function sendMsg() {
+            const input = document.getElementById("msg-input");
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const btn = document.getElementById("send-btn");
+            btn.disabled = true;
+            input.value = "";
+
+            addMsg("user", msg);
+            showTyping();
+
+            try {
+                const r = await fetch(`${BASE}/chat`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({message: msg})
+                });
+                const data = await r.json();
+                removeTyping();
+                if (r.ok) {
+                    addMsg("ai", data.reply);
+                } else {
+                    addMsg("ai", `❌ 错误：${data.detail}`);
+                }
+            } catch (e) {
+                removeTyping();
+                addMsg("ai", "⚠️ 连接失败，请确认后端服务已启动");
+            } finally {
+                btn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function quickSend(text) {
+            document.getElementById("msg-input").value = text;
+            if (!text.endsWith("：")) sendMsg();
+            else document.getElementById("msg-input").focus();
+        }
+
+        function handleKey(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMsg();
+            }
+        }
+
+        async function clearChat() {
+            await fetch(`${BASE}/clear`, {method: "POST"});
+            const history = document.getElementById("chat-history");
+            history.innerHTML = `
+                <div class="welcome">
+                    <div class="icon">🤖</div>
+                    <p>对话已清空，我们重新开始吧～</p>
+                </div>
+            `;
+        }
+
+        async function uploadDoc(file) {
+            if (!file) return;
+            const status = document.getElementById("upload-status");
+            status.textContent = "上传中...";
+            status.className = "upload-status";
+
+            const fd = new FormData();
+            fd.append("file", file);
+
+            try {
+                const r = await fetch(`${BASE}/upload`, {method:"POST", body: fd});
+                const data = await r.json();
+                if (r.ok) {
+                    status.textContent = `✅ ${data.title} 上传成功（${data.chunks}块）`;
+                    status.className = "upload-status ok";
+                    loadDocs();
+                    loadKbStatus();
+                } else {
+                    status.textContent = `❌ ${data.detail}`;
+                    status.className = "upload-status err";
+                }
+            } catch (e) {
+                status.textContent = "❌ 上传失败";
+                status.className = "upload-status err";
+            }
+            document.getElementById("file-input").value = "";
+            setTimeout(() => status.textContent = "", 4000);
+        }
+
+        async function loadDocs() {
+            try {
+                const r = await fetch(`${BASE}/documents`);
+                const data = await r.json();
+                const el = document.getElementById("doc-list");
+                if (!data.documents.length) {
+                    el.innerHTML = '<div style="font-size:13px;color:#a0aec0;padding:10px;text-align:center">暂无文档</div>';
+                    return;
+                }
+                el.innerHTML = data.documents.map(d => `
+                    <div class="doc-item">
+                        <span>📄</span>
+                        <span title="${d.title}">${d.title}</span>
+                        <button class="btn-del" onclick="deleteDoc('${d.doc_id}')">×</button>
+                    </div>
+                `).join("");
+            } catch (e) {}
+        }
+
+        async function deleteDoc(docId) {
+            if (!confirm("确定删除这个文档吗？")) return;
+            await fetch(`${BASE}/documents/${docId}`, {method:"DELETE"});
+            loadDocs();
+            loadKbStatus();
+        }
+
+        async function loadKbStatus() {
+            try {
+                const r = await fetch(`${BASE}/health`);
+                const data = await r.json();
+                const el = document.getElementById("kb-status");
+                el.textContent = data.kb_chunks > 0
+                    ? `知识库：${data.kb_chunks}个文档块`
+                    : "知识库：空";
+            } catch (e) {
+                document.getElementById("kb-status").textContent = "⚠️ 连接失败";
+            }
+        }
+
+        // 初始化
+        loadDocs();
+        loadKbStatus();
+    </script>
+</body>
+</html>
