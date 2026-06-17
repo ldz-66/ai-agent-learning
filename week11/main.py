@@ -14,7 +14,7 @@ from agent import SmartAssistant
 load_dotenv()
 
 app = FastAPI(title="个人智能助手")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["https://ai-agent-learning.vercel.app"], allow_methods=["*"], allow_headers=["*"])
 import os
 os.makedirs("static", exist_ok=True)
 os.makedirs("uploads", exist_ok=True)
