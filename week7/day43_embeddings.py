@@ -75,4 +75,4 @@ similarities.sort(reverse=True)
 
 print("\n检索结果（按相关性排序）：")
 for rank, (score, text) in enumerate(similarities[:3], 1):
-    print(f"  第{rank}名 [{score:.4f}]：{text}")
+    print(f"  第{rank}名 [{score:.4f}]：{text}")   
