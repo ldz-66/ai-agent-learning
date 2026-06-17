@@ -15,6 +15,10 @@ load_dotenv()
 
 app = FastAPI(title="个人智能助手")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+import os
+os.makedirs("static", exist_ok=True)
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("chroma_db", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 print("正在初始化智能助手（加载AI模型，约10-20秒）...")
