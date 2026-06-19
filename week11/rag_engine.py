@@ -6,8 +6,14 @@ from typing import List
 
 class RAGEngine:
     def __init__(self):
-        print("加载Embedding模型...")
-        self.embed_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+        # 打印日志，方便你在 Railway 控制台看到进度
+        print("正在初始化智能助手（加载轻量级AI模型）...")
+
+        # 【修改处】替换为更轻量的 all-MiniLM-L6-v2 模型
+        # 原模型 paraphrase-multilingual-MiniLM-L12-v2 内存占用较大，容易导致 OOM
+        self.embed_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+
+        # 初始化向量数据库
         self.db = chromadb.PersistentClient(path="./chroma_db")
         self.collection = self.db.get_or_create_collection("assistant_kb")
         print(f"RAG引擎就绪，知识库文档块数：{self.collection.count()}")
