@@ -7,7 +7,10 @@ from typing import List
 class RAGEngine:
     def __init__(self):
         print("加载Embedding模型...")
-        self.embed_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+        self.embed_model = SentenceTransformer(
+    'paraphrase-multilingual-MiniLM-L12-v2',
+    device='cpu'
+)
         self.db = chromadb.PersistentClient(path="./chroma_db")
         self.collection = self.db.get_or_create_collection("assistant_kb")
         print(f"RAG引擎就绪，知识库文档块数：{self.collection.count()}")
