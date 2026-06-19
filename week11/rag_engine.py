@@ -6,26 +6,11 @@ from typing import List
 
 class RAGEngine:
     def __init__(self):
-        print("STEP 1")
-
-        self.embed_model = SentenceTransformer(
-            "paraphrase-multilingual-MiniLM-L12-v2",
-            device="cpu"
-        )
-
-        print("STEP 2")
-
-        self.db = chromadb.PersistentClient(
-            path="./chroma_db"
-        )
-
-        print("STEP 3")
-
-        self.collection = self.db.get_or_create_collection(
-            "assistant_kb"
-        )
-
-        print("STEP 4")
+        print("加载Embedding模型...")
+        self.embed_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+        self.db = chromadb.PersistentClient(path="./chroma_db")
+        self.collection = self.db.get_or_create_collection("assistant_kb")
+        print(f"RAG引擎就绪，知识库文档块数：{self.collection.count()}")
 
     def get_embedding(self, text: str) -> list:
         return self.embed_model.encode(text).tolist()
